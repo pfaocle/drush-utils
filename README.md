@@ -20,5 +20,4 @@ Scans all enabled modules that declare hook_menu() implementations for an exact 
 Usage:
 
     drush find-callback views/ajax
-
     drush find-callback views/ajax --match=partial
