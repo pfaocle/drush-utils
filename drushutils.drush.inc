@@ -99,8 +99,8 @@ function _drushutils_output_results($matches, $match_type) {
   drush_print(('full' != $match_type ? dt('Partial') : dt('Exact')) . ' matches found:');
   drush_print();
   foreach ($matches as $match) {
-    drush_print(dt('Module: ') . $match[0]);
-    drush_print(dt('Path: ') . $match[1]);
+    drush_print(dt('Module: @module', array('@module' => $match[0])));
+    drush_print(dt('Path: @path', array('@path' => $match[1])));
     drush_print();
   }
   drush_print();
