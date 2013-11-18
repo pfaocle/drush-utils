@@ -8,6 +8,12 @@
  */
 
 /**
+ * The default count to use for the page-timer command.
+ */
+define('DRUSHUTILS_PAGE_TIMER_COUNT_DEFAULT', 10);
+
+
+/**
  * Implements COMMANDFILE_drush_command().
  *
  * @return array
@@ -29,6 +35,19 @@ function drushutils_drush_command() {
       'drush find-callback views/ajax --match=partial' => "Find modules that implement the callbacks containing 'views/ajax'.",
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+  );
+
+  $items['page-timer'] = array(
+    'description' => 'A quick and dirty average page execution timer.',
+    'options' => array(
+      'show-all' => 'If present, this option will tell the command to show the page execution times for each page load.',
+      'count' => array(
+        'description' => 'The number of page loads to execute for the average page execution time. Defaults to 10.',
+        // @todo The next two keys aren't working.
+        'example_value' => '10',
+        'value' => 'required',
+      ),
+    ),
   );
 
   return $items;
@@ -104,4 +123,51 @@ function _drushutils_output_results($matches, $match_type) {
     drush_print();
   }
   drush_print();
+}
+
+/**
+ * Page Timer command callback.
+ */
+function drush_drushutils_page_timer() {
+  $count = drush_get_option('count');
+
+  if ('boolean' == gettype($count)) {
+    drush_set_error('ERROR', dt('The count option requires a value.'));
+  }
+  else {
+    // If the option is NULL, it was not passed at all so we set a default.
+    if (NULL === $count) {
+      $count = DRUSHUTILS_PAGE_TIMER_COUNT_DEFAULT;
+    }
+
+    // We can't check using gettype(), as both 'a' and '1' passed as an option
+    // value are typed as strings. Instead, we cast only act on a positive
+    // integer.
+    $i = (int) $count;
+    if ($i > 0) {
+      $pad = strlen((string) $i);
+      $total = 0.0;
+      for ($j = 1; $j <= $i; $j++) {
+
+        // @todo Need to actually DO something here...
+        $t = timer_read('page');
+
+        $total += $t;
+        if (drush_get_option('show-all')) {
+          drush_print(dt('[@j] Page execution time: @time ms', array(
+            // Pad out the iteration number according to the total number
+            // of iterations.
+            '@j' => sprintf("%0{$pad}d", $j),
+            '@time' => sprintf('%01.2f', $t),
+          )));
+        }
+      }
+      drush_print(dt('[' . str_repeat('-', $pad) . '] Page execution time: @time ms', array(
+        '@time' => sprintf('%01.2f', $total / $i),
+      )));
+    }
+    else {
+      drush_set_error('ERROR', dt('There was a problem with the option value passed (@value).', array('@value' => $count)));
+    }
+  }
 }
