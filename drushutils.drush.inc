@@ -31,6 +31,17 @@ function drushutils_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
   );
 
+  $items['array-dump'] = array(
+    'description' => 'Outputs a flattened array returned by a Drupal core or contrib function as a list of long-key:value pairs.',
+    'arguments' => array(
+      'function' => 'The function to call. This should return an array.',
+    ),
+    'examples' => array(
+      'drush array-dump token_info' => 'Shows the flattened array returned by token_info().',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+  );
+
   return $items;
 }
 
@@ -104,4 +115,91 @@ function _drushutils_output_results($matches, $match_type) {
     drush_print();
   }
   drush_print();
+}
+
+/**
+ * Array Dump command callback.
+ *
+ * Outputs a flattened array returned by a Drupal core or contrib function as a
+ * list of long-key:value pairs.
+ *
+ * @see http://build2be.com/content/can-you-dig-it-drupal-nested-array
+ */
+function drush_drushutils_array_dump() {
+  $fn = array_pop(drush_get_arguments());
+  drush_print(dt('Function: @function', array('@function' => $fn)));
+
+  $info = call_user_func($fn);
+  if ($info) {
+    $lines = _drush_utils_array_fold($info);
+    array_walk($lines, function(&$item, $key) {
+      drush_print("$key = $item");
+    });
+  }
+  else {
+    drush_set_error('ERROR', dt('An error occurred when calling @function.', array('@function' => $fn)));
+  }
+}
+
+/**
+ * Array Dump command validation.
+ *
+ * @return bool
+ *   Response from drush_set_error().
+ */
+function drush_drushutils_array_dump_validate() {
+  $args = drush_get_arguments();
+
+  // Check to see if we have at least one argument.
+  if (1 == count($args)) {
+    return drush_set_error('ERROR', dt('You must provide a function name as an argument.'));
+  }
+
+  // Check the function referenced in the argument exists.
+  $fn = array_pop($args);
+  if (!function_exists($fn)) {
+    return drush_set_error('ERROR', dt('The function @function does not exist.', array('@function' => $fn)));
+  }
+  return TRUE;
+}
+
+/**
+ * Recursively concatenate nested keys, flattening an array into long key-value.
+ *
+ * @see http://build2be.com/content/can-you-dig-it-drupal-nested-array
+ *
+ * @param array $values
+ *   The un-flattened array.
+ *
+ * @return array
+ *   The flattened array.
+ */
+function _drush_utils_array_fold($values) {
+  $is_array = is_array($values);
+  if (!$is_array) {
+    return $values;
+  }
+  $result = array();
+  while ($is_array) {
+    $is_array = FALSE;
+    foreach ($values as $key => $data) {
+      if (is_array($data)) {
+        foreach ($data as $sub_key => $sub_data) {
+          $fold = _drush_utils_array_fold($sub_data);
+          if (is_array($fold)) {
+            foreach ($fold as $k => $val) {
+              $result[$key . '.' . $sub_key . '.' . $k] = $val;
+            }
+          }
+          else {
+            $result[$key . '.' . $sub_key] = $fold;
+          }
+        }
+      }
+      else {
+        $result[$key] = $data;
+      }
+    }
+  }
+  return $result;
 }
