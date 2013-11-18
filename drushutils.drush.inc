@@ -87,7 +87,7 @@ function drush_drushutils_find_callback_validate() {
  * Outputs the modules and their matched paths.
  *
  * @param array $matches
- *   An array of {module, path} keypairs.
+ *   An array of {module, path} key-pairs.
  *
  * @param string $match_type
  *   The matching type, 'full' or 'partial'.
