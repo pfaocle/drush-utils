@@ -48,6 +48,7 @@ function drushutils_drush_command() {
         'value' => 'required',
       ),
     ),
+//    'bootstrap' => DRUSH_BOOTSTRAP_MAX,
   );
 
   return $items;
@@ -150,16 +151,24 @@ function drush_drushutils_page_timer() {
       for ($j = 1; $j <= $i; $j++) {
 
         // @todo Need to actually DO something here...
-        $t = timer_read('page');
+        $path = 'node/1';
+        $r = menu_execute_active_handler($path, FALSE);
+        if (MENU_FOUND === $r) {
+          $t = timer_read('page');
 
-        $total += $t;
-        if (drush_get_option('show-all')) {
-          drush_print(dt('[@j] Page execution time: @time ms', array(
-            // Pad out the iteration number according to the total number
-            // of iterations.
-            '@j' => sprintf("%0{$pad}d", $j),
-            '@time' => sprintf('%01.2f', $t),
-          )));
+          $total += $t;
+          if (drush_get_option('show-all')) {
+            drush_print(dt('[@j] Page execution time: @time ms', array(
+              // Pad out the iteration number according to the total number
+              // of iterations.
+              '@j' => sprintf("%0{$pad}d", $j),
+              '@time' => sprintf('%01.2f', $t),
+            )));
+          }
+        }
+        else {
+          drush_set_error('ERROR', dt('The path @path could not be loaded [$page_callback_result = @error].', array('@path' => $path, '@error' => $r)));
+          break;
         }
       }
       drush_print(dt('[' . str_repeat('-', $pad) . '] Page execution time: @time ms', array(
