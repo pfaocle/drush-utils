@@ -131,13 +131,23 @@ function drush_drushutils_array_dump() {
 
   $info = call_user_func($fn);
   if ($info) {
-    $lines = _drush_utils_array_fold($info);
-    array_walk($lines, function(&$item, $key) {
-      drush_print("$key = $item");
-    });
+    if (is_array($info)) {
+      $lines = _drush_utils_array_fold($info);
+      array_walk($lines, function(&$item, $key) {
+        drush_print("$key = $item");
+      });
+    }
+    else {
+      drush_set_error('ERROR', dt('The return value from @function() was not an array (@type found).', array(
+        '@function' => $fn,
+        '@type' => gettype($info),
+      )));
+    }
   }
   else {
-    drush_set_error('ERROR', dt('An error occurred when calling @function.', array('@function' => $fn)));
+    drush_set_error('ERROR', dt('An error occurred when calling @function() or @function() returned NULL.', array(
+      '@function' => $fn,
+    )));
   }
 }
 
